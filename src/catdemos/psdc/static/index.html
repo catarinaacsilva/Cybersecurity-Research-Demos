@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PsDC Categorizer</title>
+  <link rel="icon" href="/common/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/common/theme.css">
+  <style>
+    .builder { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 14px; margin-top: 8px; }
+    @media (max-width: 900px) { .builder { grid-template-columns: 1fr; } }
+    .palette { display: flex; flex-direction: column; gap: 6px; }
+    .src { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2);
+      cursor: grab; user-select: none; font-size: 13px; }
+    .src small { display: block; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; }
+    .src.used { opacity: .35; cursor: default; }
+    .src.ghost { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 10; box-shadow: var(--shadow);
+      background: var(--orange); color: #1b1f27; cursor: grabbing; }
+    .palette { touch-action: none; }
+    .src:not(.used):hover { outline: 2px solid var(--orange); }
+    .tree { border: 2px dashed var(--line); border-radius: 10px; padding: 10px; min-height: 420px; transition: .15s; }
+    .tree.over { border-color: var(--orange); background: rgb(255 129 69 / 6%); }
+    .level { margin-bottom: 12px; }
+    .level > h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 6px; }
+    .lanes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .lane { background: var(--surface-2); border-radius: 8px; padding: 6px; min-height: 90px; }
+    .lane h4 { margin: 0 0 6px; font-size: 12px; }
+    .lane.identity h4 { color: #b8962e; } .lane.socio-economic h4 { color: var(--frost-2); } .lane.sensitive h4 { color: var(--red); }
+    .item { display: flex; justify-content: space-between; align-items: center; gap: 6px; background: var(--surface);
+      border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; margin-bottom: 4px; font-size: 13px;
+      animation: pop .35s ease-out; }
+    .item .c { font: 11px var(--mono); color: var(--muted); }
+    .item button { background: none; color: var(--muted); padding: 0 2px; font-size: 14px; }
+    @keyframes pop { from { transform: scale(.8); opacity: 0; } to { transform: none; opacity: 1; } }
+    .tag { display: grid; grid-template-columns: 170px minmax(0, 1fr) 150px; align-items: center; gap: 8px;
+      font-size: 13px; margin-bottom: 5px; }
+    .meter { height: 8px; border-radius: 4px; background: var(--line); position: relative; overflow: hidden; }
+    .meter i { position: absolute; inset: 0 auto 0 0; background: var(--orange); }
+    .meter b { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--navy); }
+    .structural { display: grid; grid-template-columns: 90px auto 1fr; gap: 8px 16px; align-items: center; font-size: 13px; }
+    .seg button { border-radius: 0; padding: 4px 9px; font-size: 12px; }
+    .seg button:first-child { border-radius: 8px 0 0 8px; } .seg button:last-child { border-radius: 0 8px 8px 0; }
+    .seg button.ghost.active { background: var(--orange); }
+    .score { font: 700 54px/1 var(--mono); }
+    .part { display: grid; grid-template-columns: 110px minmax(0, 1fr) 44px; gap: 8px; align-items: center;
+      font-size: 13px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#" data-hub><img src="/common/ieeta-white.svg" alt="IEETA"></a>
+  <h1>PsDC Categorizer</h1>
+  <span class="refs">Silva et al., PsDC (Information 2025) · Feature Clustering (FiCloud 2025) · <a id="hub" href="#">all demos</a></span>
+  <img class="ua" src="/common/ua-white.svg" alt="Universidade de Aveiro">
+</header>
+<p class="goal"><b>How does PsDC categorize the data an app collects, and what is that data worth?</b>
+  Build an app's data model: the server categorizes every field and measures what they reveal together.</p>
+<main class="layout">
+  <section>
+    <div class="panel">
+      <h2><span class="step">1</span>Drag fields into the app's data model</h2>
+      <p class="hint">Fields of a real census (9,000 people). Drop one into the tree, or click it; × removes it.</p>
+      <div class="builder">
+        <div class="palette" id="palette"></div>
+        <div class="tree" id="tree">
+          <div class="level"><h3>Direct data categorization <span class="nocase">(automatic)</span></h3>
+            <div class="lanes" id="lanes"></div></div>
+          <div class="level"><h3>Dynamic tags <span class="nocase">(what the combination reveals, measured)</span></h3>
+            <div id="tags"><p class="hint">Add fields to see what they reveal.</p></div></div>
+          <div class="level"><h3><span class="step">2</span>Structural attributes <span class="nocase">(how the data is handled)</span></h3>
+            <div class="structural" id="structural"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <aside>
+    <div class="panel">
+      <h2>Privacy value of this data model</h2>
+      <div class="score" id="score">–</div>
+      <div id="parts"></div>
+      <p class="hint">0 = harmless, 1 = everything collected, forever, continuously.</p>
+    </div>
+    <div class="panel">
+      <h2>How it works</h2>
+      <p class="hint"><b>Categorization</b>: each field's name and real values are compared with short definitions of
+        the three categories (character n-gram TF-IDF); the closest wins. Agreement with an expert:
+        <b id="agree">–</b>.</p>
+      <p class="hint"><b>Dynamic tags</b>: a profiler is retrained on the collected fields to guess each sensitive fact
+        not collected (bar; the line marks guessing), and the share of people made unique is counted.</p>
+      <details class="how"><summary>The score</summary>
+        Privacy value = structural × (½ direct + ½ dynamic). Direct: collected fields weighted by category
+        (sensitive 1, identity 0.6, socio-economic 0.35) and by how much sensitive information their values carry
+        (mutual information). Dynamic: the strongest tag. Structural: mean of frequency and retention; coarse
+        granularity bins the values, which changes the measured tags. This aggregation is the demo's
+        simplification of PsDC's privacy value.
+      </details>
+    </div>
+  </aside>
+</main>
+<footer class="status" id="status">loading…</footer>
+<script type="module" src="/static/psdc.js"></script>
+</body>
+</html>

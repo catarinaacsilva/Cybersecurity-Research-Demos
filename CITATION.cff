@@ -1,0 +1,71 @@
+cff-version: 1.2.0
+message: "If you use these demos, please cite them and the papers they implement."
+title: "Privacy engineering: interactive research demos"
+abstract: >-
+  Four interactive web demos (Python, FastAPI, WebSocket) of the privacy-engineering research
+  of Catarina Silva at IEETA, University of Aveiro: ASAP Latent Map (autoencoder detection of
+  privacy-harmful Android apps), PsDC Categorizer (automatic data categorization and measured
+  privacy value), DP vs Profiling (differential privacy against re-identification and profiling)
+  and Elastic Privacy Map (self-adaptive location privacy).
+type: software
+authors:
+  - family-names: Silva
+    given-names: Catarina
+    affiliation: "IEETA, University of Aveiro"
+version: 0.1.0
+date-released: "2026-09-25"
+license: MIT
+keywords:
+  - privacy engineering
+  - DevPrivOps
+  - privacy quantification
+  - differential privacy
+  - anomaly detection
+  - geo-indistinguishability
+references:
+  - type: article
+    title: "ASAP 2.0: Autonomous & proactive detection of malicious applications for privacy quantification in 6G network services"
+    authors: &sfbs
+      - {family-names: Silva, given-names: Catarina}
+      - {family-names: Felisberto, given-names: João}
+      - {family-names: Barraca, given-names: João Paulo}
+      - {family-names: Salvador, given-names: Paulo}
+    journal: Computer Communications
+    year: 2025
+    doi: 10.1016/j.comcom.2025.108145
+  - type: conference-paper
+    title: "ASAP: A Dynamic & Proactive Approach for Android Security Analysis and Privacy"
+    authors: *sfbs
+    conference: {name: "International Conference on Future Internet of Things and Cloud (FiCloud)"}
+    year: 2024
+    doi: 10.1109/ficloud62933.2024.00012
+  - type: article
+    title: "Proactive Data Categorization for Privacy in DevPrivOps"
+    authors: &sbs
+      - {family-names: Silva, given-names: Catarina}
+      - {family-names: Barraca, given-names: João Paulo}
+      - {family-names: Salvador, given-names: Paulo}
+    journal: Information
+    year: 2025
+    doi: 10.3390/info16030185
+  - type: conference-paper
+    title: "Evaluating the Effectiveness of Differential Privacy Against Profiling"
+    authors: *sbs
+    conference: {name: "International Conference on Communications and Technologies (ICCT-Europe)"}
+    year: 2025
+    doi: 10.1109/icct-europe63283.2025.11157698
+  - type: conference-paper
+    title: "Semantic and Numerical Feature Clustering for Automated Privacy Quantification"
+    authors: *sbs
+    conference: {name: "International Conference on Future Internet of Things and Cloud (FiCloud)"}
+    year: 2025
+    doi: 10.1109/ficloud66139.2025.00033
+  - type: conference-paper
+    title: "Self-Adaptive Governance for Elastic Privacy in Mental Health Digital Phenotyping"
+    authors:
+      - {family-names: Silva, given-names: Catarina}
+      - {family-names: Costa, given-names: T.}
+      - {family-names: Antunes, given-names: M.}
+    conference: {name: "International Conference on Future Internet of Things and Cloud (FiCloud)"}
+    year: 2026
+    doi: 10.1109/FiCloud70576.2026.00014

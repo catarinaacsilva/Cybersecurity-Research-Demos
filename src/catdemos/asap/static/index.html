@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ASAP Latent Map</title>
+  <link rel="icon" href="/common/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/common/theme.css">
+  <style>
+    /* Three columns: square map | threshold + detector | app profile. */
+    main.asap { grid-template-columns: minmax(360px, 68vh) 340px minmax(0, 1fr); }
+    @media (max-width: 1250px) { main.asap { grid-template-columns: minmax(0, 1fr) 340px; } main.asap > section:last-child { grid-column: 1 / -1; } }
+    @media (max-width: 980px) { main.asap { grid-template-columns: 1fr; } }
+    #map { aspect-ratio: 1 / 1; } /* the latent plane must stay square: x and y share one scale */
+    #hist { height: 140px; cursor: ew-resize; }
+    .verdict { font-size: 20px; font-weight: 700; }
+    .verdict.bad { color: var(--red); } .verdict.ok { color: var(--green); }
+    .labelbox { display: flex; align-items: center; gap: 12px; }
+    .labelbox .badge { font-size: 34px; padding: 8px 18px; }
+    h3.sub { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 12px 0 6px; }
+    .part { display: grid; grid-template-columns: 100px minmax(0, 1fr) 44px; gap: 8px; align-items: center;
+      font-size: 13px; margin: 3px 0; }
+    .meter { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+    .meter i { display: block; height: 100%; width: 0; background: var(--orange); transition: width .15s; }
+    .group { margin-bottom: 10px; }
+    .group h4 { margin: 0 0 4px; font-size: 13px; }
+    .group.t1 h4 { color: var(--red); } .group.t2 h4 { color: #b8962e; } .group.t3 h4 { color: var(--frost-2); }
+    .group .none { font-size: 12px; color: var(--muted); }
+    .confusion { display: grid; grid-template-columns: auto 1fr 1fr; gap: 4px; font: 13px var(--mono); }
+    .confusion div { background: var(--surface-2); padding: 4px 8px; border-radius: 4px; text-align: right; }
+    .confusion .h { background: none; color: var(--muted); text-align: center; }
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#" data-hub><img src="/common/ieeta-white.svg" alt="IEETA"></a>
+  <h1>ASAP Latent Map</h1>
+  <span class="refs">Silva et al., ASAP (2024) · ASAP 2.0 (Computer Communications 2025) · <a id="hub" href="#">all demos</a></span>
+  <img class="ua" src="/common/ua-white.svg" alt="Universidade de Aveiro">
+</header>
+<p class="goal"><b>Can a privacy-harmful Android app be spotted from the permissions it asks for?</b>
+  Explore 29,332 real apps and let the ASAP detectors judge any permission profile.</p>
+<main class="layout asap">
+  <section>
+    <div class="panel">
+      <h2><span class="step">1</span>Move the mouse over the map of apps</h2>
+      <p class="hint">Each point of the map is a permission profile; the server decodes the one under the mouse
+        and scores it. Dots are real apps, the background is the detectors' verdict.</p>
+      <canvas id="map"></canvas>
+      <div class="legend"><span><i style="background:var(--frost-2)"></i>benign app</span>
+        <span><i style="background:var(--red)"></i>malicious app</span>
+        <span><i style="background:var(--green)"></i>judged benign</span>
+        <span><i style="background:var(--red);opacity:.5"></i>judged malicious</span></div>
+      <details class="how"><summary>How it works</summary>
+        Two autoencoders learn to rebuild the permission lists of benign and of malicious training apps
+        (unsupervised, as in ASAP 2.0). An app that the benign autoencoder rebuilds badly but the malicious one
+        rebuilds well gets a high anomaly score. The map itself comes from a third autoencoder with a 2-D
+        bottleneck: any point decodes to a permission list. The A–E label combines the detector's probability
+        (60 %) with the app's PsDC exposure (40 %): requested permissions weighted by tier (direct personal
+        data, behavioural, structural). Data: NATICUSdroid (UCI, CC BY 4.0).
+      </details>
+    </div>
+  </section>
+  <aside>
+    <div class="panel">
+      <h2>App under the mouse</h2>
+      <div class="verdict" id="verdict" style="margin-top:4px">Move over the map</div>
+      <h3 class="sub">Privacy level</h3>
+      <div class="labelbox">
+        <span class="badge lv-A" id="label">–</span>
+        <div class="grow">
+          <div class="part"><span>detector risk</span><span class="meter"><i id="pm-bar"></i></span><span class="mono" id="pm">–</span></div>
+          <div class="part"><span>PsDC exposure</span><span class="meter"><i id="exp-bar"></i></span><span class="mono" id="exp">–</span></div>
+        </div>
+      </div>
+      <p class="hint" style="margin:8px 0 0">Nearest real apps: <b id="nn">–</b> malicious.
+        Level = 60 % detector risk + 40 % exposure.</p>
+    </div>
+    <div class="panel">
+      <h2>Permissions by PsDC category <span class="nocase" id="tiers"></span></h2>
+      <div id="perms"></div>
+    </div>
+  </aside>
+  <section>
+    <div class="panel">
+      <h2><span class="step">2</span>Drag the detection threshold</h2>
+      <p class="hint">Stricter or looser? The server recounts hits and false alarms on 7,333 held-out apps.</p>
+      <canvas id="hist"></canvas>
+      <div class="legend"><span><i style="background:var(--frost-2)"></i>benign apps</span>
+        <span><i style="background:var(--red)"></i>malicious apps</span>
+        <span><i style="background:var(--orange);border-radius:0;width:3px"></i>threshold</span></div>
+      <div class="row" style="margin-top:8px">
+        <button class="ghost" id="reset">Reset to best (dynamic) threshold</button>
+        <span class="hint grow" id="thrnote"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Detector on held-out apps</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">MCC</div><div class="v" id="mcc">–</div></div>
+        <div class="stat"><div class="k">caught / false alarms</div><div class="v" id="rates">–</div></div>
+      </div>
+      <div class="confusion" style="margin-top:10px">
+        <span></span><div class="h">judged benign</div><div class="h">judged malicious</div>
+        <div class="h">benign</div><div id="tn"></div><div id="fp"></div>
+        <div class="h">malicious</div><div id="fn"></div><div id="tp"></div>
+      </div>
+      <details class="how"><summary>Compared with the paper</summary>
+        ASAP 2.0 reports MCC 0.976 on its three datasets with a single autoencoder. On NATICUSdroid a single
+        benign-only autoencoder reaches only ~0.54, so this demo pairs a benign and a malicious autoencoder;
+        a supervised classifier reaches ~0.93 on the same split, the practical ceiling.
+      </details>
+    </div>
+  </section>
+</main>
+<footer class="status" id="status">loading model…</footer>
+<script type="module" src="/static/asap.js"></script>
+</body>
+</html>

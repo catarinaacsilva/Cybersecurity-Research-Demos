@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DP vs Profiling</title>
+  <link rel="icon" href="/common/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/common/theme.css">
+  <style>
+    #chart { height: 330px; cursor: ew-resize; }
+    .fields { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .field { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2);
+      cursor: pointer; user-select: none; font-size: 13px; }
+    .field.hidden { background: var(--frost-2); border-color: var(--frost-2); color: #fff; }
+    .field.hidden::before { content: "🔒 "; }
+    .seg button { border-radius: 0; } .seg button:first-child { border-radius: 8px 0 0 8px; }
+    .seg button:last-child { border-radius: 0 8px 8px 0; } .seg button.ghost.active { background: var(--orange); }
+    .big .v { font-size: 30px; }
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#" data-hub><img src="/common/ieeta-white.svg" alt="IEETA"></a>
+  <h1>DP vs Profiling</h1>
+  <span class="refs">Silva et al., Evaluating the Effectiveness of Differential Privacy Against Profiling (2025) · <a id="hub" href="#">all demos</a></span>
+  <img class="ua" src="/common/ua-white.svg" alt="Universidade de Aveiro">
+</header>
+<p class="goal"><b>Differential privacy stops re-identification, but does it stop profiling?</b>
+  A census release of 9,000 real people is attacked in two ways while you add noise.</p>
+<main class="layout">
+  <section>
+    <div class="panel">
+      <div class="row"><h2 class="grow"><span class="step">1</span>Choose the fields to hide with differential privacy</h2>
+        <span class="hint" style="margin:0">sensitive fact:</span><span class="seg" id="targets"></span></div>
+      <p class="hint">Every field is published; <span style="color:var(--frost-2)">🔒 hidden</span> fields get DP noise,
+        the others are published exactly. Click to switch.</p>
+      <div class="fields" id="fields"></div>
+      <div class="row" style="margin-top:8px"><button class="ghost" id="all">Hide all</button>
+        <button class="ghost" id="none">Hide none</button></div>
+    </div>
+    <div class="panel">
+      <h2><span class="step">2</span>Move along the privacy budget <span class="nocase">ε</span></h2>
+      <p class="hint">Left = more noise. The server adds the noise, retrains the profiler and reruns the linkage attack.</p>
+      <canvas id="chart"></canvas>
+      <div class="legend"><span><i style="background:var(--orange)"></i>profiling: guesses the sensitive fact</span>
+        <span><i style="background:var(--frost-2)"></i>re-identification: finds the person's record</span>
+        <span>dashed: guessing / chance · dotted: no DP</span></div>
+    </div>
+  </section>
+  <aside>
+    <div class="panel">
+      <h2>At <span class="nocase">ε = <span id="eps">–</span></span></h2>
+      <div class="stats big">
+        <div class="stat"><div class="k">profiling power kept</div><div class="v" id="keepP">–</div></div>
+        <div class="stat"><div class="k">re-identification kept</div><div class="v" id="keepR">–</div></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">profiling accuracy</div><div class="v" id="prof">–</div></div>
+        <div class="stat"><div class="k">people re-identified</div><div class="v" id="reid">–</div></div>
+      </div>
+      <p class="hint" id="verdict"></p>
+    </div>
+    <div class="panel">
+      <h2>Try</h2>
+      <p class="hint">Hide all, then release only <b>relationship</b> exactly: nobody can be re-identified,
+        yet "married" is still guessed almost perfectly. Hiding the classic identifiers (age, sex, race, country)
+        protects neither.</p>
+      <details class="how"><summary>How it works</summary>
+        Local DP on each hidden field: Laplace noise for numbers, randomised response for categories, ε per field.
+        Profiling: logistic regression trained on 6,000 released records, tested on 3,000 others; "power kept" is
+        the share of its advantage over guessing that survives DP. Re-identification: an adversary who knows the
+        true values of 800 people links each to the nearest released record. Data: UCI Adult census (CC BY 4.0).
+      </details>
+    </div>
+  </aside>
+</main>
+<footer class="status" id="status">loading…</footer>
+<script type="module" src="/static/dp.js"></script>
+</body>
+</html>

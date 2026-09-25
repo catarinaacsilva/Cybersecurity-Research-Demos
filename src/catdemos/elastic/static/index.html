@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Elastic Privacy Map</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="icon" href="/common/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/common/theme.css">
+  <style>
+    #map { height: 55vh; min-height: 360px; border-radius: 8px; }
+    #map.drawing { cursor: crosshair; }
+    #spark { height: 80px; cursor: ew-resize; margin-top: 6px; }
+    .state { font-size: 20px; font-weight: 700; }
+    .state.alert { color: var(--red); } .state.calm { color: var(--green); }
+    table.bench { width: 100%; border-collapse: collapse; font: 13px var(--mono); }
+    table.bench td, table.bench th { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: right; }
+    table.bench th:first-child, table.bench td:first-child { text-align: left; }
+    button.active { outline: 3px solid var(--navy); }
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#" data-hub><img src="/common/ieeta-white.svg" alt="IEETA"></a>
+  <h1>Elastic Privacy Map</h1>
+  <span class="refs">Silva et al., Elastic Privacy in Mental Health Digital Phenotyping (2026) · <a id="hub" href="#">all demos</a></span>
+  <img class="ua" src="/common/ua-white.svg" alt="Universidade de Aveiro">
+</header>
+<p class="goal"><b>Can a phone hide a patient's whereabouts every day, yet stay precise during a crisis?</b>
+  A privacy membrane blurs every released location, and an AI agent tightens it only when behaviour looks like a crisis.</p>
+<main class="layout">
+  <section>
+    <div class="panel">
+      <div class="row">
+        <h2 class="grow"><span class="step">1</span>Hold the mouse and draw a walk</h2>
+        <button id="draw" class="active">✏ Draw</button>
+        <button id="routine" class="ghost">Routine walk</button>
+        <button id="sample" class="ghost">Walk with a crisis</button>
+        <button id="clear" class="ghost" title="clear the walk and re-centre the map">↺ Reset</button>
+      </div>
+      <p class="hint">Draw at a steady pace for normal walking. <b>Stop moving</b> (button held) to freeze on the spot,
+        or <b>scribble</b> back and forth to pace: both look like a crisis.</p>
+      <div id="map" class="drawing"></div>
+      <div class="row" style="margin-top:10px">
+        <h2 class="grow"><span class="step">2</span>Replay, or drag along the timeline</h2>
+        <button id="replay" class="ghost">▶ Replay</button>
+      </div>
+      <canvas id="spark"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--navy)"></i>true path (stays on the phone)</span>
+        <span><i style="background:var(--orange)"></i>released locations</span>
+        <span><i style="background:var(--frost-2)"></i>membrane (routine)</span>
+        <span><i style="background:var(--red)"></i>membrane (crisis alert)</span>
+        <span>timeline: <b style="color:var(--orange)">anomaly score</b> · <b style="color:var(--frost-2)">membrane radius</b></span>
+      </div>
+    </div>
+  </section>
+  <aside>
+    <div class="panel">
+      <h2>At t = <span id="t">–</span> s</h2>
+      <div class="state calm" id="state" style="margin-top:6px">Draw a walk</div>
+      <div class="stats">
+        <div class="stat"><div class="k">membrane radius</div><div class="v" id="radius">–</div></div>
+        <div class="stat"><div class="k">anomaly score</div><div class="v" id="score">–</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>This walk</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">privacy (routine blur)</div><div class="v" id="shield">–</div></div>
+        <div class="stat"><div class="k">precision (crisis error)</div><div class="v" id="aerr">–</div></div>
+      </div>
+      <p class="hint" id="alertsec"></p>
+    </div>
+    <div class="panel">
+      <h2>Held-out benchmark</h2>
+      <table class="bench">
+        <tr><th></th><th>this demo</th><th>paper</th></tr>
+        <tr><td>routine blur</td><td id="b-shield">–</td><td id="p-shield">–</td></tr>
+        <tr><td>crisis error</td><td id="b-crisis">–</td><td id="p-crisis">–</td></tr>
+        <tr><td>crisis time detected</td><td id="b-det">–</td><td>–</td></tr>
+        <tr><td>false alerts</td><td id="b-fa">–</td><td>–</td></tr>
+      </table>
+      <details class="how"><summary>How it works</summary>
+        The drawn path becomes a 1 Hz trace with phone-like GPS error. Movement features over 20 s windows
+        (speed, turning, spread, dwell) feed an autoencoder trained on routine walks: a high reconstruction
+        error is a possible crisis. A small neural agent, trained by neuro-evolution, turns that score into the
+        membrane radius (5–200 m). Each released point is shifted by planar-Laplace noise
+        (geo-indistinguishability) with mean offset equal to the radius. Routine walks for training follow the
+        real Aveiro street network (OpenStreetMap); crises (pacing, freezing, wandering) are injected, as in the
+        paper.
+      </details>
+    </div>
+  </aside>
+</main>
+<footer class="status" id="status">loading…</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script type="module" src="/static/elastic.js"></script>
+</body>
+</html>

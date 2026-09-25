@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Research Demos</title>
+  <link rel="icon" href="/common/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/common/theme.css">
+  <style>
+    .intro { max-width: 1240px; margin: 22px auto 0; padding: 0 20px; }
+    .intro h2 { text-transform: none; font-size: 26px; color: var(--text); letter-spacing: 0; }
+    .intro p { color: var(--muted); max-width: 760px; }
+    .cards { max-width: 1240px; margin: 16px auto 32px; padding: 0 20px; display: grid; gap: 16px;
+      grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    @media (max-width: 1100px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 620px) { .cards { grid-template-columns: 1fr; } }
+    .cards .panel + .panel { margin-top: 0; }
+    .card { display: flex; flex-direction: column; gap: 10px; border-top: 5px solid var(--orange); }
+    .card h3 { font-size: 19px; }
+    .card .how { font-size: 13px; background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
+    .card ul { margin: 0; padding-left: 18px; font-size: 12px; color: var(--muted); }
+    .card .foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
+    .card a.open { background: var(--orange); color: #1b1f27; text-decoration: none; font-weight: 700;
+      padding: 8px 14px; border-radius: 8px; white-space: nowrap; }
+    .card a.open:hover { background: var(--orange-d); }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--line);
+      margin-right: 6px; vertical-align: -1px; }
+    .dot.up { background: var(--green); } .dot.down { background: var(--red); }
+    .status-text { font: 12px var(--mono); color: var(--muted); }
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/"><img src="/common/ieeta-white.svg" alt="IEETA"></a>
+  <h1>Privacy engineering: interactive research demos</h1>
+  <img class="ua" src="/common/ua-white.svg" alt="Universidade de Aveiro">
+</header>
+<section class="intro">
+  <h2>The research of Catarina Silva, running live</h2>
+  <p>Four questions from her work, one live demo each. Every mouse movement goes to a server that
+    reruns the actual models (autoencoders, profilers, differential privacy, a neuro-evolved agent) on real
+    data, and the page redraws.</p>
+</section>
+<main class="cards" id="cards"></main>
+<footer class="status" id="status"></footer>
+<script type="module">
+  const demos = await (await fetch("/api/demos")).json();
+  const base = (d) => `${location.protocol}//${location.hostname}:${d.port}/`;
+  const hub = encodeURIComponent(location.href);
+  document.getElementById("cards").innerHTML = demos.map((d) => `
+    <article class="panel card">
+      <h3>${d.title}</h3>
+      <p style="margin:0;font-weight:600">${d.pitch}</p>
+      <div class="how"><b>Try it:</b> ${d.interaction}</div>
+      <details class="how"><summary>Based on</summary><ul>${d.papers.map((p) => `<li>${p}</li>`).join("")}</ul></details>
+      <div class="foot">
+        <span class="status-text"><span class="dot" id="dot-${d.key}"></span><span id="st-${d.key}">checking…</span></span>
+        <a class="open" href="${base(d)}?hub=${hub}">Open demo →</a>
+      </div>
+    </article>`).join("");
+
+  async function poll() {
+    await Promise.all(demos.map(async (d) => {
+      let up = false;
+      try { up = (await fetch(`${base(d)}health`, { cache: "no-store" })).ok; } catch {}
+      document.getElementById(`dot-${d.key}`).className = `dot ${up ? "up" : "down"}`;
+      document.getElementById(`st-${d.key}`).textContent = `${up ? "running" : "offline"} · :${d.port}`;
+    }));
+  }
+  poll();
+  setInterval(poll, 5000);
+</script>
+</body>
+</html>
